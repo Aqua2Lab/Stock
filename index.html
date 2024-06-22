@@ -45,7 +45,7 @@
         const response = await fetch(url);
         const data = await response.json();
         const rows = data.values;
-        const resultRows = rows.filter(row => row[1].toLowerCase().includes(searchTerm)); // Change the column index to the search column, e.g., 1 for column 2
+        const resultRows = rows.filter(row => row[1].toLowerCase().includes(searchTerm) || row[3].toLowerCase().includes(searchTerm)); // Change the column index to the search column, e.g., 1 for column 2
 
         displayResults(resultRows);
     }
