@@ -23,6 +23,16 @@
         th {
             background-color: #f4f4f4;
         }
+        .image-container {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .image-container img {
+            width: 200px; /* Set the width of the image */
+            height: 200px; /* Set the height of the image */
+            object-fit: contain; /* Ensure the entire image is visible without distortion */
+            margin: 5px;
+        }
     </style>
 </head>
 <body>
@@ -82,6 +92,36 @@
                 tr.appendChild(td);
             });
             table.appendChild(tr);
+
+            // Add image URLs from column index 2
+            const imageUrls = row[2] ? row[2].split(',') : [];
+            if (imageUrls.length > 0) {
+                const imageContainer = document.createElement('div');
+                imageContainer.className = 'image-container';
+                imageUrls.forEach(url => {
+                    const img = document.createElement('img');
+                    const trimmedUrl = url.trim();
+                    const fileId = trimmedUrl.split('=')[1];
+                    if (fileId) {
+                        const thumbnailUrl = `https://drive.google.com/thumbnail?id=${fileId}`;
+                        img.src = thumbnailUrl;
+                        img.alt = "Image";
+                        img.onerror = () => {
+                            console.error(`Failed to load image: ${thumbnailUrl}`);
+                        };
+                        console.log(`Loading image: ${thumbnailUrl}`);
+                        imageContainer.appendChild(img);
+                    } else {
+                        console.error(`Invalid URL: ${trimmedUrl}`);
+                    }
+                });
+                const imageRow = document.createElement('tr');
+                const imageCell = document.createElement('td');
+                imageCell.colSpan = columns.length; // Span the image cell across all columns
+                imageCell.appendChild(imageContainer);
+                imageRow.appendChild(imageCell);
+                table.appendChild(imageRow);
+            }
         });
 
         resultsDiv.appendChild(table);
