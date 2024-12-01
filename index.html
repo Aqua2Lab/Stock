@@ -101,19 +101,22 @@
                 imageUrls.forEach(url => {
                     const img = document.createElement('img');
                     const trimmedUrl = url.trim();
-                    const fileId = trimmedUrl.split('=')[1];
-                    if (fileId) {
-                        const thumbnailUrl = `https://drive.google.com/thumbnail?id=${fileId}`;
-                        img.src = thumbnailUrl;
-                        img.alt = "Image";
-                        img.onerror = () => {
-                            console.error(`Failed to load image: ${thumbnailUrl}`);
-                        };
-                        console.log(`Loading image: ${thumbnailUrl}`);
-                        imageContainer.appendChild(img);
+                    
+                    if (trimmedUrl.includes('drive.google.com')) {
+                        const fileId = trimmedUrl.split('=')[1];
+                        if (fileId) {
+                            img.src = `https://drive.google.com/thumbnail?id=${fileId}`;
+                        }
                     } else {
-                        console.error(`Invalid URL: ${trimmedUrl}`);
+                        img.src = trimmedUrl; // Use the URL directly for other internet images
                     }
+
+                    img.alt = "Image";
+                    img.onerror = () => {
+                        console.error(`Failed to load image: ${trimmedUrl}`);
+                    };
+
+                    imageContainer.appendChild(img);
                 });
                 const imageRow = document.createElement('tr');
                 const imageCell = document.createElement('td');
