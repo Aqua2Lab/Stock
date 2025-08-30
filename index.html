@@ -1,135 +1,465 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Sheets Search</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-        }
-        #results {
-            margin-top: 20px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f4f4f4;
-        }
-        .image-container {
-            display: flex;
-            flex-wrap: wrap;
-        }
-        .image-container img {
-            width: 200px; /* Set the width of the image */
-            height: 200px; /* Set the height of the image */
-            object-fit: contain; /* Ensure the entire image is visible without distortion */
-            margin: 5px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  />
+  <title>Sheet Search · Mobile Friendly</title>
+  <style>
+    :root{
+      --bg:#0f1220;
+      --card:#171a2b;
+      --muted:#7f8aad;
+      --text:#e8ecff;
+      --accent:#6aa2ff;
+      --accent-2:#49d49d;
+      --border:rgba(255,255,255,.08);
+      --danger:#ff6b6b;
+      --shadow:0 10px 25px rgba(0,0,0,.25);
+      --radius:14px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: linear-gradient(180deg,#0c0f1a 0%, #0f1220 50%, #0b0e19 100%);
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+    .wrap{
+      max-width:1100px;
+      margin-inline:auto;
+      padding:20px clamp(16px,4vw,28px) 80px;
+    }
+
+    /* Header / Search bar */
+    .header{
+      position:sticky; top:0; z-index:5;
+      background:rgba(15,18,32,.85);
+      backdrop-filter: blur(10px);
+      border-bottom:1px solid var(--border);
+    }
+    .header-inner{
+      max-width:1100px; margin:0 auto;
+      padding:12px clamp(16px,4vw,28px);
+      display:grid; gap:12px;
+      grid-template-columns: 1fr auto;
+      align-items:center;
+    }
+    h1{
+      font-size:clamp(18px,2.2vw,24px);
+      margin:0;
+      letter-spacing:.3px;
+      font-weight:650;
+    }
+    .search{
+      display:flex; gap:8px; align-items:center;
+      width:100%;
+      grid-column:1 / -1;
+    }
+    .search .field{
+      position:relative; flex:1;
+    }
+    .search input{
+      width:100%; padding:14px 44px 14px 44px;
+      border-radius:999px; border:1px solid var(--border);
+      background: linear-gradient(180deg, #14182a, #121626);
+      color:var(--text); outline:none; font-size:16px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+    }
+    .search .icon{
+      position:absolute; left:14px; top:50%; transform:translateY(-50%);
+      opacity:.7; font-size:18px;
+      pointer-events:none;
+    }
+    .btn{
+      border:none; cursor:pointer; transition:.2s transform;
+      padding:12px 16px; border-radius:999px; font-weight:600;
+      color:#081019; background: linear-gradient(180deg,#7fb1ff,#6aa2ff);
+      box-shadow: var(--shadow);
+    }
+    .btn:active{ transform: translateY(1px) }
+    .btn.secondary{
+      background: linear-gradient(180deg,#66e1b8,#49d49d); color:#061612;
+    }
+    .btn.ghost{
+      background: transparent; color:var(--muted);
+      border:1px solid var(--border); box-shadow:none;
+    }
+    .pill{
+      display:inline-flex; gap:8px; align-items:center;
+      padding:6px 10px; font-size:12px; border-radius:999px;
+      border:1px solid var(--border); color:var(--muted);
+    }
+    .meta{
+      display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+      margin-top:12px;
+    }
+
+    /* Cards (mobile) */
+    .cards{
+      display:grid; gap:14px; margin-top:16px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width:700px){
+      .cards{ display:none; }
+    }
+    .card{
+      background: linear-gradient(180deg,#151a2d,#111528);
+      border:1px solid var(--border); border-radius:var(--radius);
+      box-shadow: var(--shadow);
+      padding:14px;
+    }
+    .card h3{margin:0 0 4px; font-size:16px}
+    .kv{ display:grid; grid-template-columns: 120px 1fr; gap:8px 12px; }
+    .kv div{ color:var(--muted); font-size:13px }
+    .kv div strong{ color:var(--text); font-weight:600 }
+
+    /* Table (desktop) */
+    .table-wrap{
+      display:none;
+      margin-top:18px; overflow:auto;
+      border:1px solid var(--border); border-radius:12px;
+      background:linear-gradient(180deg,#14182a,#101426);
+      box-shadow: var(--shadow);
+    }
+    @media (min-width:700px){
+      .table-wrap{ display:block; }
+    }
+    table{
+      width:100%; border-collapse:separate; border-spacing:0;
+      min-width:720px;
+    }
+    thead th{
+      position:sticky; top:0; z-index:1;
+      background: #121729;
+      color:#cfd7ff; text-align:left; font-weight:700;
+      padding:12px; border-bottom:1px solid var(--border);
+    }
+    tbody td{
+      padding:12px; border-top:1px solid var(--border);
+      vertical-align:top;
+    }
+    tbody tr:hover{ background: rgba(255,255,255,.02); }
+
+    /* Image gallery */
+    .images{
+      display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;
+    }
+    .images img{
+      width:104px; height:104px; border-radius:10px;
+      object-fit:contain; background:#0b0f1e; border:1px solid var(--border);
+    }
+
+    /* Empty / error / loader */
+    .center{
+      display:flex; align-items:center; justify-content:center;
+      text-align:center; padding:36px; color:var(--muted);
+    }
+    .spinner{
+      width:22px; height:22px; border-radius:50%;
+      border:3px solid rgba(255,255,255,.15);
+      border-top-color:var(--accent);
+      animation:spin .8s linear infinite; margin-right:10px;
+    }
+    @keyframes spin{ to{ transform:rotate(360deg) } }
+
+    /* Utility */
+    .row-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+    .sr-only{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+  </style>
 </head>
 <body>
 
-<h1>Search Google Sheets</h1>
-<input type="text" id="searchTerm" placeholder="Enter text to search">
-<button onclick="searchSheet()">Search</button>
+  <!-- Sticky header with search -->
+  <div class="header">
+    <div class="header-inner">
+      <h1>Google Sheets Search</h1>
+      <div class="search" role="search">
+        <div class="field">
+          <span class="icon">🔎</span>
+          <input id="searchTerm" type="search" inputmode="search" placeholder="Search by Name or Model…" autocomplete="off" />
+        </div>
+        <button id="searchBtn" class="btn" aria-label="Search">Search</button>
+        <button id="clearBtn" class="btn ghost" aria-label="Clear">Clear</button>
+      </div>
+      <div class="meta">
+        <span id="resultCount" class="pill">0 results</span>
+        <span id="statusPill" class="pill">Ready</span>
+      </div>
+    </div>
+  </div>
 
-<div id="results"></div>
+  <div class="wrap">
+    <!-- Cards view (phones) -->
+    <div id="cards" class="cards" aria-live="polite"></div>
 
-<script>
-    const API_KEY = 'AIzaSyA5OHKs5Qf4JI0w3f-IeuzyQzphhPkWTsM'; // Replace with your Google Sheets API Key
-    const SHEET_ID = '1DBzLyR9zAqIDCwyIW5Ihuddm2AynN6RzADJJ09xyW1s'; // Replace with your Google Sheet ID
-    const RANGE = encodeURIComponent('Form Responses 1'); // Encode the sheet name with spaces
+    <!-- Table view (tablets/desktop) -->
+    <div class="table-wrap" id="tableWrap" aria-live="polite">
+      <table id="resultsTable">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Model</th>
+            <th>Unit</th>
+            <th>Price</th>
+            <th>Avail Qty</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
 
-    async function searchSheet() {
-        const searchTerm = document.getElementById('searchTerm').value.toLowerCase();
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
-        
-        const response = await fetch(url);
-        const data = await response.json();
-        const rows = data.values;
-        const resultRows = rows.filter(row => row[1].toLowerCase().includes(searchTerm) || row[3].toLowerCase().includes(searchTerm)); // Change the column index to the search column, e.g., 1 for column 2
+    <div id="footerActions" class="row-actions" style="margin-top:16px; display:none;">
+      <button id="showMoreBtn" class="btn secondary">Show more</button>
+      <button id="backToTop" class="btn ghost">Back to top</button>
+    </div>
 
-        displayResults(resultRows);
+    <div id="state" class="center" style="display:none;">
+      <div class="spinner" aria-hidden="true"></div>
+      <span id="stateText">Loading…</span>
+    </div>
+  </div>
+
+  <script>
+    // ===== CONFIG (replace with yours if needed) =====
+    const API_KEY  = 'AIzaSyA5OHKs5Qf4JI0w3f-IeuzyQzphhPkWTsM';
+    const SHEET_ID = '1DBzLyR9zAqIDCwyIW5Ihuddm2AynN6RzADJJ09xyW1s';
+    const RANGE    = encodeURIComponent('Form Responses 1');
+
+    // Which columns to show in the UI (0-based indexes)
+    const SELECTED = [1, 3, 4, 6, 8]; // Name, Model, Unit, Price, Avail Qty
+    const LABELS   = ['Name','Model','Unit','Price','Avail Qty'];
+
+    // Which columns to search through:
+    const SEARCH_COLUMNS = [1, 3]; // e.g., Name + Model
+
+    // ===== Elements =====
+    const el = {
+      search: document.getElementById('searchTerm'),
+      btn: document.getElementById('searchBtn'),
+      clear: document.getElementById('clearBtn'),
+      count: document.getElementById('resultCount'),
+      status: document.getElementById('statusPill'),
+      cards: document.getElementById('cards'),
+      tbody: document.getElementById('tbody'),
+      tableWrap: document.getElementById('tableWrap'),
+      state: document.getElementById('state'),
+      stateText: document.getElementById('stateText'),
+      showMore: document.getElementById('showMoreBtn'),
+      toTop: document.getElementById('backToTop'),
+      footerActions: document.getElementById('footerActions'),
+    };
+
+    // ===== State =====
+    let allRows = [];       // full data from sheet (without header)
+    let filtered = [];      // filtered results
+    let page = 0;           // pagination page
+    const PAGE_SIZE = 30;   // items per "page"
+
+    // ===== Helpers =====
+    const val = (row, i) => (row && row[i]) ? String(row[i]) : '';
+
+    function toThumbFromDrive(url){
+      // Supports: .../file/d/{id}/view, open?id=, uc?id=, ?id=
+      try{
+        if(!url) return null;
+        const u = new URL(url);
+        const idParam = u.searchParams.get('id');
+        if(idParam) return `https://drive.google.com/thumbnail?id=${idParam}&sz=w400`;
+        const match = url.match(/\/d\/([^/]+)\//);
+        if(match && match[1]) return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w400`;
+      }catch(_e){}
+      // Non-drive (or raw) URL:
+      return url;
     }
 
-    function displayResults(rows) {
-        const resultsDiv = document.getElementById('results');
-        resultsDiv.innerHTML = '';
+    function extractImageUrls(cell){
+      if(!cell) return [];
+      return String(cell).split(',').map(s => toThumbFromDrive(s.trim())).filter(Boolean);
+    }
 
-        if (rows.length === 0) {
-            resultsDiv.innerHTML = '<p>No results found</p>';
-            return;
+    function showState(text, show=true){
+      el.state.style.display = show ? 'flex' : 'none';
+      el.stateText.textContent = text || '';
+    }
+
+    function setStatus(text){ el.status.textContent = text; }
+
+    function updateCount(n){
+      el.count.textContent = `${n} result${n===1?'':'s'}`;
+    }
+
+    function debounce(fn, ms=300){
+      let t; return (...args) => { clearTimeout(t); t=setTimeout(()=>fn(...args), ms); }
+    }
+
+    function normalize(s){ return (s||'').toString().toLowerCase().trim(); }
+
+    // ===== Fetch data =====
+    async function loadSheet(){
+      showState('Loading data…', true);
+      setStatus('Fetching');
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
+      try{
+        const res = await fetch(url);
+        const json = await res.json();
+        if(!json.values || !Array.isArray(json.values)) throw new Error('No data returned');
+        const rows = json.values;
+
+        // Assume first row is header; slice it off if it looks like text headers
+        if(rows.length && rows[0].some(c => typeof c === 'string')){
+          allRows = rows.slice(1);
+        }else{
+          allRows = rows;
         }
 
-        const table = document.createElement('table');
-        const headerRow = document.createElement('tr');
-        
-        // Update these to your actual column names
-        const columns = ['Name', 'Model', 'Unit', 'Price', 'Avail  Qty'];
-        columns.forEach(column => {
-            const th = document.createElement('th');
-            th.textContent = column;
-            headerRow.appendChild(th);
-        });
-        
-        table.appendChild(headerRow);
-
-        rows.forEach(row => {
-            const tr = document.createElement('tr');
-            // Modify to display the specific columns (indices start at 0)
-            const selectedIndices = [1, 3, 4, 6, 8]; // Columns 2, 3, 4, 5, 7 correspond to indices 1, 2, 3, 4, 6
-            selectedIndices.forEach(index => {
-                const td = document.createElement('td');
-                td.textContent = row[index] ? row[index] : ''; // Handle undefined values
-                tr.appendChild(td);
-            });
-            table.appendChild(tr);
-
-            // Add image URLs from column index 2
-            const imageUrls = row[2] ? row[2].split(',') : [];
-            if (imageUrls.length > 0) {
-                const imageContainer = document.createElement('div');
-                imageContainer.className = 'image-container';
-                imageUrls.forEach(url => {
-                    const img = document.createElement('img');
-                    const trimmedUrl = url.trim();
-                    
-                    if (trimmedUrl.includes('drive.google.com')) {
-                        const fileId = trimmedUrl.split('=')[1];
-                        if (fileId) {
-                            img.src = `https://drive.google.com/thumbnail?id=${fileId}`;
-                        }
-                    } else {
-                        img.src = trimmedUrl; // Use the URL directly for other internet images
-                    }
-
-                    img.alt = "Image";
-                    img.onerror = () => {
-                        console.error(`Failed to load image: ${trimmedUrl}`);
-                    };
-
-                    imageContainer.appendChild(img);
-                });
-                const imageRow = document.createElement('tr');
-                const imageCell = document.createElement('td');
-                imageCell.colSpan = columns.length; // Span the image cell across all columns
-                imageCell.appendChild(imageContainer);
-                imageRow.appendChild(imageCell);
-                table.appendChild(imageRow);
-            }
-        });
-
-        resultsDiv.appendChild(table);
+        setStatus('Ready');
+        showState('', false);
+      }catch(e){
+        console.error(e);
+        setStatus('Error');
+        showState('Failed to load data. Check your API key / Sheet ID.', true);
+      }
     }
-</script>
 
+    // ===== Filter & Render =====
+    function runSearch(){
+      const q = normalize(el.search.value);
+      page = 0;
+
+      if(!q){
+        // Show everything if no query
+        filtered = [...allRows];
+      }else{
+        filtered = allRows.filter(row =>
+          SEARCH_COLUMNS.some(i => normalize(val(row,i)).includes(q))
+        );
+      }
+
+      updateCount(filtered.length);
+      renderPage(true);
+      setStatus(q ? `Search: “${el.search.value.trim()}”` : 'Ready');
+    }
+
+    function renderPage(reset=false){
+      if(reset){
+        el.cards.innerHTML = '';
+        el.tbody.innerHTML = '';
+      }
+
+      const start = page * PAGE_SIZE;
+      const end   = Math.min(start + PAGE_SIZE, filtered.length);
+      const slice = filtered.slice(start, end);
+
+      // Cards (mobile)
+      slice.forEach(row => {
+        const c = document.createElement('div');
+        c.className = 'card';
+
+        const name = val(row, SELECTED[0]);
+        const model = val(row, SELECTED[1]);
+
+        c.innerHTML = `
+          <h3>${name || '—'}</h3>
+          <div class="kv">
+            <div>Model</div><div><strong>${model || '—'}</strong></div>
+            <div>Unit</div><div><strong>${val(row, SELECTED[2]) || '—'}</strong></div>
+            <div>Price</div><div><strong>${val(row, SELECTED[3]) || '—'}</strong></div>
+            <div>Avail Qty</div><div><strong>${val(row, SELECTED[4]) || '—'}</strong></div>
+          </div>
+        `;
+
+        const imgs = extractImageUrls(row[2]);
+        if(imgs.length){
+          const g = document.createElement('div');
+          g.className = 'images';
+          imgs.forEach(src=>{
+            const img = new Image();
+            img.loading = 'lazy';
+            img.decoding = 'async';
+            img.src = src;
+            img.alt = name ? `${name} image` : 'Item image';
+            g.appendChild(img);
+          });
+          c.appendChild(g);
+        }
+        el.cards.appendChild(c);
+      });
+
+      // Table (desktop)
+      slice.forEach(row=>{
+        const tr = document.createElement('tr');
+        SELECTED.forEach(i=>{
+          const td = document.createElement('td');
+          td.textContent = val(row, i);
+          tr.appendChild(td);
+        });
+        el.tbody.appendChild(tr);
+
+        // Images row
+        const imgs = extractImageUrls(row[2]);
+        if(imgs.length){
+          const imgRow = document.createElement('tr');
+          const imgTd = document.createElement('td');
+          imgTd.colSpan = SELECTED.length;
+
+          const g = document.createElement('div');
+          g.className = 'images';
+          imgs.forEach(src=>{
+            const img = new Image();
+            img.loading = 'lazy';
+            img.decoding = 'async';
+            img.src = src;
+            img.alt = 'Image';
+            g.appendChild(img);
+          });
+          imgTd.appendChild(g);
+          imgRow.appendChild(imgTd);
+          el.tbody.appendChild(imgRow);
+        }
+      });
+
+      // Footer controls
+      const more = end < filtered.length;
+      el.footerActions.style.display = filtered.length ? 'flex' : 'none';
+      el.showMore.style.display = more ? 'inline-flex' : 'none';
+      el.toTop.style.display = filtered.length ? 'inline-flex' : 'none';
+    }
+
+    // ===== Events =====
+    const debouncedSearch = debounce(runSearch, 300);
+
+    el.btn.addEventListener('click', runSearch);
+    el.clear.addEventListener('click', ()=>{
+      el.search.value = '';
+      runSearch();
+      el.search.focus();
+    });
+
+    el.search.addEventListener('input', debouncedSearch);
+    el.search.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter'){ e.preventDefault(); runSearch(); }
+    });
+
+    el.showMore.addEventListener('click', ()=>{
+      page++;
+      renderPage(false);
+    });
+
+    el.toTop.addEventListener('click', ()=>{
+      window.scrollTo({top:0, behavior:'smooth'});
+    });
+
+    // Initial load
+    (async function init(){
+      await loadSheet();
+      runSearch();
+    })();
+  </script>
 </body>
 </html>
