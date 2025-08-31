@@ -171,6 +171,26 @@
     /* Utility */
     .row-actions{ display:flex; gap:8px; flex-wrap:wrap; }
     .sr-only{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+
+
+
+/* Image preview modal */
+#imgPreview {
+  display:none;
+  position:fixed;
+  z-index:9999;
+  left:0; top:0;
+  width:100%; height:100%;
+  background:rgba(0,0,0,0.85);
+  align-items:center; justify-content:center;
+}
+#imgPreview img {
+  max-width:90%; max-height:90%;
+  border-radius:12px;
+  box-shadow:0 0 25px rgba(0,0,0,.6);
+}
+#imgPreview:target { display:flex; }
+
   </style>
 </head>
 <body>
@@ -460,6 +480,22 @@
       await loadSheet();
       runSearch();
     })();
+
+document.addEventListener('click', function(e){
+  if(e.target.tagName === 'IMG' && e.target.closest('.images')){
+    const preview = document.getElementById('imgPreview');
+    const imgContent = document.getElementById('imgPreviewContent');
+    imgContent.src = e.target.src.replace(/sz=w400/, "sz=w2000"); // fetch higher res if Google Drive
+    preview.style.display = 'flex';
+  }
+});
   </script>
+
+
+<!-- Image Preview Modal -->
+<div id="imgPreview" onclick="this.style.display='none'">
+  <img id="imgPreviewContent" src="" alt="Preview">
+</div>
+
 </body>
 </html>
